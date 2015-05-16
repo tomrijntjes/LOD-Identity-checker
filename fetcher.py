@@ -14,8 +14,8 @@ def stream_statements(endpoints,pages):
             c.setopt(pycurl.HTTPHEADER, ["Accept: application/n-quads"])
             c.perform()
             body = buffer.getvalue()
-            for element in body.decode('utf-8').split():
-                yield element
+            for statement in body.decode('utf-8').split():
+                yield statement
 
 def stream_endpoints(url):
     pagesize,page = 1,1
@@ -28,15 +28,27 @@ def stream_endpoints(url):
             yield endpoint
         page+=1
 
+def splat_statements(statements):
+    sameAs = "<http://www.w3.org/2002/07/owl#sameAs>"
+    third,second,first = ' ',' ',' '
+    for statement in statements:
+        third,second,first = statement,third,second
+        if third[-1]=='.' and second == sameAs: #this feels kind of crude
+            yield (first,second,third)
+
+
+
+
+
 if __name__ == '__main__':
     url = "http://index.lodlaundromat.org/r2d/http%3A%2F%2Fwww.w3.org%2F2002%2F07%2Fowl%23sameAs?page="
     endpoints = stream_endpoints(url)
-    for endpoint in endpoints:
-        print(endpoint)
-    """
-    endpoints = ["0032d1f3c356798f23cb89874eaabb98"]
-    pages = 1
+    #endpoints = ["0032d1f3c356798f23cb89874eaabb98"]
+    pages = 1 #still needs a reliable way of finding the number of pages per endpoint
     statements = stream_statements(endpoints,pages)
-    for statement in statements:
-        print(statement)
-        """
+    triples = splat_statements(statements)
+    counter = 0
+    for triple in triples:
+        print(triple)
+        counter+=1
+    print(counter)

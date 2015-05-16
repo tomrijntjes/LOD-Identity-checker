@@ -30,9 +30,13 @@ def stream_endpoints(url):
 
 if __name__ == '__main__':
     url = "http://index.lodlaundromat.org/r2d/http%3A%2F%2Fwww.w3.org%2F2002%2F07%2Fowl%23sameAs?page="
-    #endpoints = stream_endpoints(url)
+    endpoints = stream_endpoints(url)
+    for endpoint in endpoints:
+        print(endpoint)
+    """
     endpoints = ["0032d1f3c356798f23cb89874eaabb98"]
     pages = 1
     statements = stream_statements(endpoints,pages)
     for statement in statements:
         print(statement)
+        """

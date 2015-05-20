@@ -77,9 +77,18 @@ def getNumberOfSameAs(endpoint):
     body = buffer.getvalue()
     for statement in body.decode('utf-8').split('\n'):
         if "totalItems" in statement:
+            #print(endpoint)
             number = extractNumber(statement)
+            return number
+            '''
+            intNumber = int(number)
+            if isinstance(intNumber, int):
+                return intNumber
+            else:
+                return 0
+            '''
             #print(endpoint + " has number of sameAs: "+ number + "\n\n\n")
-            return int(number)
+            
     
     
 
@@ -90,10 +99,17 @@ if __name__ == '__main__':
     
     totalSameAs = 0
     counter = 0
+    
     for endpoint in endpoints:
-        totalSameAs +=getNumberOfSameAs(endpoint)
+        #totalSameAs +=getNumberOfSameAs(endpoint)
+        f = open("C:/users/sietse/desktop/sameAsResults_v1.txt",'a')
+        writeString = endpoint + ": " + str(getNumberOfSameAs(endpoint))
+        print(str(counter) + ": " + str(writeString))
+        f.write(writeString)
         counter+=1
-        print(str(counter) + ": " + str(totalSameAs))
+        f.close()
+        #print(str(counter) + ": " + str(totalSameAs))
+        #print(counter)
     
     
     '''

@@ -2,11 +2,11 @@ import json
 import urllib.request
 import codecs
 from retriever import Retriever
-from rdflib import Graph
 import aiohttp
+import sys
 
 
-def stream_pages(endpoints,pages=1):
+def stream_pages(endpoints):
     urls = ["http://ldf.lodlaundromat.org/"+endpoint+"?predicate=http%3A%2F%2Fwww.w3.org%2F2002%2F07%2Fowl%23sameAs&page=" for endpoint in endpoints]
     for page,url,endpoint in zip(Retriever(urls),urls,endpoints):
         for statement in page.split('\n'):
@@ -46,7 +46,7 @@ def stream_quads(pages):
 
 if __name__ == '__main__':
     url = "http://index.lodlaundromat.org/r2d/http%3A%2F%2Fwww.w3.org%2F2002%2F07%2Fowl%23sameAs?page="
-    endpoints = stream_endpoints(url)
+    endpoints = list(stream_endpoints(url))
     #endpoints = ["03f8be0fbfe4d7529bb93c14ee1c65e7","057c1d67ebb7d7aa039c53da9e913f66"]
     pages = stream_pages(endpoints)
     with open("identity.nq","w") as f:

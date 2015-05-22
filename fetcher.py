@@ -1,24 +1,25 @@
 import json
 import urllib.request
 import codecs
-import pycurl
-from io import BytesIO
+from retriever import Retriever
+from rdflib import Graph
+import aiohttp
 
-def stream_statements(endpoints,pages=1):
-    c = pycurl.Curl()
-    counter = 1
-    for endpoint in endpoints:
-        print("Visiting endpoint #{0}: {1}".format(str(counter),endpoint))
-        buffer = BytesIO()
-        c.setopt(c.WRITEDATA, buffer)
-        c.setopt(pycurl.URL, "http://ldf.lodlaundromat.org/"+endpoint+"?predicate=http%3A%2F%2Fwww.w3.org%2F2002%2F07%2Fowl%23sameAs&page=1")
-        c.setopt(pycurl.HTTPHEADER, ["Accept: application/n-quads"])
-        c.perform()
-        body = buffer.getvalue()
-        for statement in body.decode('utf-8').split('\n'):
-            yield statement
-        buffer.close()
-        counter+=1
+
+def stream_pages(endpoints,pages=1):
+    urls = ["http://ldf.lodlaundromat.org/"+endpoint+"?predicate=http%3A%2F%2Fwww.w3.org%2F2002%2F07%2Fowl%23sameAs&page=" for endpoint in endpoints]
+    for page,url,endpoint in zip(Retriever(urls),urls,endpoints):
+        for statement in page.split('\n'):
+            if "totalItems" in statement:
+                statements = int(statement.split('"')[1])
+                break
+        if statements%100 == 0:
+            pagecount = statements/100
+        else:
+            pagecount = int(statements/100) + 1
+        pages = [url+str(page) for page in range(1,1+pagecount)]
+        for page in Retriever(pages):
+            yield endpoint,page
 
 
 def stream_endpoints(url):
@@ -32,41 +33,22 @@ def stream_endpoints(url):
             yield endpoint
         page+=1
 
-def splat_statements(statements):
-    sameAs = "<http://www.w3.org/2002/07/owl#sameAs>"
-    third,second,first = ' ',' ',' '
-    for statement in statements:
-        third,second,first = statement,third,second
-        if third[-1]=='.' and second == sameAs: #this feels kind of crude
-            yield (first,second,third)
+def stream_quads(pages):
+    for page in pages:
+        endpoint = " <http://lodlaundromat.org/resource/"+page[0]+">."
+        for statement in page[1].split('\n'):
+            triple = statement.split(' ')
+            if len(triple) == 3 and triple[1]=="<http://www.w3.org/2002/07/owl#sameAs>":
+                yield statement[:-1]+endpoint+"\n"
 
-def sameAs_count(statements):
-    running_count = 0
-    for statement in statements:
-        if "totalItems" in statement:
-            sameAs = statement.split('"')[1]
-            if sameAs:
-                running_count += int(sameAs)
-                print(running_count)
-                yield int(sameAs)
 
-def tests():
-    assert len(list(stream_endpoints("http://index.lodlaundromat.org/r2d/http%3A%2F%2Fwww.w3.org%2F2002%2F07%2Fowl%23sameAs?page=")))<10000
-    print("[+] stream_endpoints OK")
-    statements = list(stream_statements(["0032d1f3c356798f23cb89874eaabb98","01abf0f5914a8b6c9e48980aacb9ddad"]))
-    print("[+] Example statements {0}".format(statements[3:5]))
-    try:
-        assert len(statements) == len(set(statements))
-    except AssertionError:
-        print("[-] {0} duplicates found in a total of {1} statements".format(len(statements) - len(set(statements)),len(statements)))
-        raise
-    print("[+] no duplicates found, stream_statements OK")
 
 
 if __name__ == '__main__':
-    #tests()
     url = "http://index.lodlaundromat.org/r2d/http%3A%2F%2Fwww.w3.org%2F2002%2F07%2Fowl%23sameAs?page="
     endpoints = stream_endpoints(url)
-    statements = stream_statements(endpoints)
-    tally = list(sameAs_count(statements))
-    print("Visited {0} endpoints, containing a total of {1} sameAs statements".format(str(len(tally)),str(sum(tally))))
+    #endpoints = ["03f8be0fbfe4d7529bb93c14ee1c65e7","057c1d67ebb7d7aa039c53da9e913f66"]
+    pages = stream_pages(endpoints)
+    with open("identity.nq","w") as f:
+        for quad in stream_quads(pages):
+            f.write(quad)

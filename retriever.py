@@ -6,12 +6,15 @@ from io import BytesIO
 
 
 class Retriever:
-    def __init__(self,urls):
+    def __init__(self,urls,endpoints,throttle=10):
+        self.total_urls = str(len(urls))
+        if len(endpoints)==1:
+            endpoints = [endpoints]*int(self.total_urls) #bit of a hack, needs work
         self.results = list()
         self.c = pycurl.Curl()
-        self.sem = asyncio.Semaphore(200)
+        self.sem = asyncio.Semaphore(throttle)
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(self.main(urls))
+        loop.run_until_complete(self.main(urls,endpoints))
 
 
     def __iter__(self):
@@ -33,7 +36,7 @@ class Retriever:
             self.results.append(statement)
         buffer.close()
 
-    def fetch_page(self,url, idx):
+    def fetch_page(self,url, endpoint, idx):
         try:
             with (yield from self.sem):
                 response = yield from aiohttp.request('GET', url,headers={"Accept": "application/n-quads"})
@@ -42,17 +45,17 @@ class Retriever:
             time.sleep(1)
             response = yield from aiohttp.request('GET', url)
         if response.status == 200:
-            print("[+] Data fetched successfully for page: " + str(idx+1))
             raw = yield from response.text()
-            self.results.append(raw)
+            self.results.append([endpoint,url,raw])
+            print("[+] #{0}:{1}/{2}".format(str(idx+1),str(len(self.results)),self.total_urls))
         else:
             print("[-] Data fetch failed for: %d" % idx)
             print(response.content, response.status)
         response.close()
 
-    def main(self,urls):
+    def main(self,urls,endpoints):
         coros = []
         for idx, url in enumerate(urls):
-            coros.append(asyncio.Task(self.fetch_page(url, idx)))
+            coros.append(asyncio.Task(self.fetch_page(url, endpoints[idx], idx)))
 
         yield from asyncio.gather(*coros)

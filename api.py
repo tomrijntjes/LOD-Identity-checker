@@ -2,10 +2,15 @@
 """
 scaffold for API endpoint. Browse to localhost:5000/api/test to view.
 """
-from flask import Flask, jsonify
+from flask import Flask, jsonify, render_template, url_for, request
 from flask import abort
+import requests
+from SPARQLWrapper import SPARQLWrapper, RDF, JSON
+import json
 
 app = Flask(__name__)
+
+REPOSITORY = 'http://localhost:8080/openrdf-sesame/repositories/AR-AI'
 
 connections = [
     {
@@ -19,6 +24,54 @@ connections = [
 ]
 
 
+
+@app.route('/')
+def first_page():
+    app.logger.debug('You arrived at ' + url_for('first_page'))
+    return render_template('LOD_Identity_Home.html')
+
+@app.route('/get_similar')
+def get_similar():
+    
+    app.logger.debug('You arrived at /get_similar')
+    app.logger.debug('I received the following uri: ' + str(request.args.get("uri",None) ))
+    
+    uri = request.args.get('uri', None)
+    
+    return_format = request.args.get('format', None)
+    query = "select ?p where {" + uri + " <http://www.w3.org/2002/07/owl#sameAs> ?p}"
+    endpoint = REPOSITORY
+    sparql = SPARQLWrapper(endpoint)
+    sparql.setQuery(query)
+    
+    #initialize dict to return counted results
+    to_return = {}
+
+    sparql.setReturnFormat(JSON)
+    app.logger.debug('Query:\n{}'.format(query))        
+
+    try :
+            response = sparql.query().convert()
+            app.logger.debug('Results were returned')
+            app.logger.debug(response)
+          
+            for item in response['results']['bindings']:
+                if item['p']['value'] in to_return:
+                    to_return[item['p']['value']] +=1
+                else:
+                    to_return[item['p']['value']] = 1
+            
+            
+    except Exception as e:
+        app.logger.error('Something went wrong')
+        app.logger.error(e)
+        return jsonify({'result': 'Error'})
+            
+        
+    else :
+        return jsonify(to_return)
+    
+    
 @app.route('/api/<path:uri>', methods=['GET'])
 def get_task(uri):
     if len(uri) == 0:

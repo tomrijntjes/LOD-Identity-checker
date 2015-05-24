@@ -50,6 +50,8 @@ class Retriever:
                 self.results.append([endpoint,url,raw])
             except UnicodeDecodeError: #needs works
                 self.results.append([endpoint,url,'here be unicode'])
+            except LookupError:
+                self.results.append([endpoint,url,'unknown encoding'])
             print("[+] #{0}:{1}/{2}".format(str(idx+1),str(len(self.results)),self.total_urls))
         else:
             print("[-] Data fetch failed for: %d" % idx)

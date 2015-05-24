@@ -45,8 +45,11 @@ class Retriever:
             time.sleep(1)
             response = yield from aiohttp.request('GET', url)
         if response.status == 200:
-            raw = yield from response.text()
-            self.results.append([endpoint,url,raw])
+            try:
+                raw = yield from response.text()
+                self.results.append([endpoint,url,raw])
+            except UnicodeDecodeError: #needs works
+                self.results.append([endpoint,url,'here be unicode'])
             print("[+] #{0}:{1}/{2}".format(str(idx+1),str(len(self.results)),self.total_urls))
         else:
             print("[-] Data fetch failed for: %d" % idx)

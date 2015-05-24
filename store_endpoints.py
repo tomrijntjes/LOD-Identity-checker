@@ -15,7 +15,7 @@ def stream_pages(endpoints):
                 statements = int(statement.split('"')[1])
                 break
         if statements%100 == 0:
-            pagecount = statements/100
+            pagecount = int(statements/100)
         else:
             pagecount = int(statements/100) + 1
         yield "{0}\t{1}\n".format(endpoint,pagecount)

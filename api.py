@@ -70,6 +70,41 @@ def get_similar(uri):
 @app.route('/api/identity', methods=['GET'])
 def return_similar_api():
     return get_similar(str(request.args.get("uri",None)))
+
+@app.route('/api/compare', methods=['GET'])
+def compare_uris():
+    
+    app.logger.debug("you arrived at 'compare uris'")
+    uri1 = str(request.args.get("uri1", None))
+    uri2 = str(request.args.get("uri2", None))
+    
+    query = "select ?p where {GRAPH ?p {" + uri1 + " <http://www.w3.org/2002/07/owl#sameAs> " + uri2 + "}}"
+    app.logger.debug('Query:\n{}'.format(query)) 
+    endpoint = REPOSITORY
+    sparql = SPARQLWrapper(endpoint)
+    sparql.setQuery(query)
+    sparql.setReturnFormat(JSON)
+    uris = {}
+    i = 1
+    
+    try :
+        response = sparql.query().convert()
+        
+        
+        for item in response['results']['bindings']:
+            app.logger.debug(item)
+            uris[i] = item['p']['value']
+            i+=1
+        
+        app.logger.debug("results = " + str(uris))
+        
+        
+    except Exception as e:
+        app.logger.error('Something went wrong')
+        app.logger.error(e)
+        return jsonify({'result': 'Error'})
+    else:
+        return jsonify(uris)
     
 
 '''    

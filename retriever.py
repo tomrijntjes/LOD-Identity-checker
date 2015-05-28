@@ -6,13 +6,13 @@ from io import BytesIO
 
 
 class Retriever:
-    def __init__(self,urls,endpoints,throttle=10):
+    def __init__(self,urls,endpoints,throttle=10,verbose=False):
         self.total_urls = str(len(urls))
         if len(endpoints)==1:
             endpoints = [endpoints]*int(self.total_urls) #bit of a hack, needs work
         self.results = list()
-        self.c = pycurl.Curl()
         self.sem = asyncio.Semaphore(throttle)
+        self.verbose = verbose
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.main(urls,endpoints))
 
@@ -24,6 +24,8 @@ class Retriever:
         if len(self.results) == 0:
             raise StopIteration
         return self.results.pop(0)
+
+
 
     def fetch_page1(self,url,idx):
         buffer = BytesIO()
@@ -52,7 +54,8 @@ class Retriever:
                 self.results.append([endpoint,url,'here be unicode'])
             except LookupError:
                 self.results.append([endpoint,url,'unknown encoding'])
-            print("[+] #{0}:{1}/{2}".format(str(idx+1),str(len(self.results)),self.total_urls))
+            if self.verbose:
+                print("[+] #{0}:{1}/{2}".format(str(idx+1),str(len(self.results)),self.total_urls))
         else:
             print("[-] Data fetch failed for: %d" % idx)
             print(response.content, response.status)

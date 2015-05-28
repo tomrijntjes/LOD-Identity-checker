@@ -5,10 +5,9 @@ from retriever import Retriever
 import aiohttp
 import sys
 
-
 def stream_pages(endpoints):
     urls = ["http://ldf.lodlaundromat.org/"+endpoint+"?predicate=http%3A%2F%2Fwww.w3.org%2F2002%2F07%2Fowl%23sameAs&page=" for endpoint in endpoints]
-    for endpoint,url,page in Retriever(urls,endpoints):
+    for endpoint,url,page in Retriever(urls,endpoints,verbose=True):
         statements = 0
         for statement in page.split('\n'):
             if "totalItems" in statement:
@@ -18,7 +17,7 @@ def stream_pages(endpoints):
             pagecount = int(statements/100)
         else:
             pagecount = int(statements/100) + 1
-        yield "{0}\t{1}\n".format(endpoint,pagecount)
+        yield "{0}\t{1}\t{2}\n".format(endpoint,pagecount,statements)
 
 
 def stream_endpoints(url):
@@ -41,3 +40,5 @@ if __name__ == '__main__':
     with open("endpoints.txt","w") as f:
         for page in pages:
             f.write(page)
+    print("Total pages: " + str(sum(int(endpoint.split()[1]) for endpoint in open("endpoints.txt"))))
+    print("Total statements: " + str(sum(int(endpoint.split()[2]) for endpoint in open("endpoints.txt"))))

@@ -1,6 +1,0 @@
-<http://test1.com> <http://www.w3.org/2002/07/owl#sameAs> <http://test2.com> <http://resource1.com> .
-<http://test2.com> <http://www.w3.org/2002/07/owl#sameAs> <http://test3.com> <http://resource1.com> .
-
-<http://test1.com> <http://www.w3.org/2002/07/owl#sameAs> <http://test5.com> <http://resource1.com> .
-
-<http://test5.com> <http://www.w3.org/2002/07/owl#sameAs> <http://test30.com> <http://resource1.com> .
